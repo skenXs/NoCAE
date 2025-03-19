@@ -10,7 +10,6 @@
 
 namespace NoCAE.Properties {
     
-    
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.3.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
@@ -19,6 +18,8 @@ namespace NoCAE.Properties {
         
         public static Settings Default {
             get {
+                // Log the retrieval of the default settings instance
+                Console.WriteLine("Retrieving the default settings instance.");
                 return defaultInstance;
             }
         }
