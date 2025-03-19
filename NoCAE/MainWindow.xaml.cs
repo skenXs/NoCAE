@@ -1,4 +1,4 @@
-﻿using Microsoft.Identity.Client;
+using Microsoft.Identity.Client;
 using Microsoft.Identity.Client.Desktop;
 using System;
 using System.Collections.Generic;
@@ -172,26 +172,26 @@ namespace NoCAE
         public async Task<string> GetHttpContentWithToken(string url, string token, string[] scopes)
         {
             var httpClient = new HttpClient();
-            HttpResponseMessage APIresponse;
+            HttpResponseMessage apiResponse;
             try
             {
-                var APIrequest = new HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
+                var apiRequest = new HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
                 //Add the token in Authorization header
-                APIrequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-                APIresponse = await httpClient.SendAsync(APIrequest);
+                apiRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                apiResponse = await httpClient.SendAsync(apiRequest);
 
-                if (APIresponse.IsSuccessStatusCode)
+                if (apiResponse.IsSuccessStatusCode)
                 {
-                    var content = await APIresponse.Content.ReadAsStringAsync();
+                    var content = await apiResponse.Content.ReadAsStringAsync();
                     var expandedContent = content.Replace(",", "," + Environment.NewLine);
                     return expandedContent;
                 }
                 else
                 {
-                    if (APIresponse.StatusCode == System.Net.HttpStatusCode.Unauthorized
-                        && APIresponse.Headers.WwwAuthenticate.Any())
+                    if (apiResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                        && apiResponse.Headers.WwwAuthenticate.Any())
                     {
-                        AuthenticationHeaderValue bearer = APIresponse.Headers.WwwAuthenticate.First
+                        AuthenticationHeaderValue bearer = apiResponse.Headers.WwwAuthenticate.First
                             (v => v.Scheme == "Bearer");
                         IEnumerable<string> parameters = bearer.Parameter.Split(',').Select(
                             v => v.Trim()).ToList();
@@ -202,37 +202,37 @@ namespace NoCAE
                             var claimChallengeParameter = GetParameter(parameters, "claims");
                             if (null != claimChallengeParameter)
                             {
-                                var claimChallengebase64Bytes = System.Convert.FromBase64String(
+                                var claimChallengeBase64Bytes = System.Convert.FromBase64String(
                                     claimChallengeParameter);
-                                var ClaimChallenge = System.Text.Encoding.UTF8.GetString(
-                                    claimChallengebase64Bytes);
+                                var claimChallenge = System.Text.Encoding.UTF8.GetString(
+                                    claimChallengeBase64Bytes);
 
-                                var newAccessToken = await GetAccessToken(scopes, ClaimChallenge);
+                                var newAccessToken = await GetAccessToken(scopes, claimChallenge);
                                 if (null != newAccessToken)
                                 {
-                                    var APIrequestAfterCAE = new HttpRequestMessage(
+                                    var apiRequestAfterCAE = new HttpRequestMessage(
                                         System.Net.Http.HttpMethod.Get, url);
-                                    APIrequestAfterCAE.Headers.Authorization =
+                                    apiRequestAfterCAE.Headers.Authorization =
                                         new System.Net.Http.Headers.AuthenticationHeaderValue(
                                             "Bearer", newAccessToken);
 
-                                    HttpResponseMessage APIresponseAfterCAE;
-                                    APIresponseAfterCAE = await httpClient.SendAsync(
-                                        APIrequestAfterCAE);
+                                    HttpResponseMessage apiResponseAfterCAE;
+                                    apiResponseAfterCAE = await httpClient.SendAsync(
+                                        apiRequestAfterCAE);
 
-                                    if (APIresponseAfterCAE.IsSuccessStatusCode)
+                                    if (apiResponseAfterCAE.IsSuccessStatusCode)
                                     {
-                                        var content = await APIresponseAfterCAE.Content.ReadAsStringAsync();
+                                        var content = await apiResponseAfterCAE.Content.ReadAsStringAsync();
                                         var expandedContent = content.Replace(",", "," + Environment.NewLine);
                                         return expandedContent;
                                     }
                                 }
                             }
                         }
-                        return APIresponse.StatusCode.ToString() + " " + "Authorization: " + bearer.ToString();
+                        return apiResponse.StatusCode.ToString() + " " + "Authorization: " + bearer.ToString();
                     }
-                    sbLog.AppendLine(APIresponse.StatusCode + " " + APIresponse.Content.ReadAsStringAsync());
-                    return APIresponse.StatusCode.ToString() + " " + APIresponse.ReasonPhrase;
+                    sbLog.AppendLine(apiResponse.StatusCode + " " + apiResponse.Content.ReadAsStringAsync());
+                    return apiResponse.StatusCode.ToString() + " " + apiResponse.ReasonPhrase;
                 }
             }
             catch (Exception ex)
