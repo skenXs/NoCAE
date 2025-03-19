@@ -30,6 +30,8 @@ namespace NoCAE.Properties {
         
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
+            // Log the creation of a Resources instance
+            Console.WriteLine("Resources instance created.");
         }
         
         /// <summary>
@@ -39,6 +41,8 @@ namespace NoCAE.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceManagerInstance, null)) {
+                    // Log the initialization of the ResourceManager
+                    Console.WriteLine("Initializing ResourceManager instance.");
                     global::System.Resources.ResourceManager tempResourceManager = new global::System.Resources.ResourceManager("NoCAE.Properties.Resources", typeof(Resources).Assembly);
                     resourceManagerInstance = tempResourceManager;
                 }
@@ -56,6 +60,8 @@ namespace NoCAE.Properties {
                 return resourceCulture;
             }
             set {
+                // Log the change of Culture
+                Console.WriteLine($"Culture set to: {value}");
                 resourceCulture = value;
             }
         }
