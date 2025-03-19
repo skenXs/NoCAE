@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 
 namespace NoCAE
 {
@@ -7,10 +7,6 @@ namespace NoCAE
     /// </summary>
     public partial class App : Application
     {
-        static App()
-        {
-        }
-
         // Below are the clientId (Application Id) of your app registration and the tenant information. 
         // You have to replace:
         // - the content of ClientID with the Application Id for your app registration
