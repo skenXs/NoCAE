@@ -1,17 +1,14 @@
-﻿using Microsoft.Identity.Client;
+using Microsoft.Identity.Client;
 using Microsoft.Identity.Client.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-
 
 namespace NoCAE
 {
@@ -36,7 +33,7 @@ namespace NoCAE
         /// </summary>
         private async void SignInButton_Click(object sender, RoutedEventArgs e)
         {
-            LogText.Text = String.Empty;
+            LogText.Text = string.Empty;
             sbLog.Clear();
 
             if (_clientApp != null)
@@ -63,7 +60,7 @@ namespace NoCAE
             _clientApp = builder.Build();
             TokenCacheHelper.EnableSerialization(_clientApp.UserTokenCache);
 
-            string[] scopesRequest = new string[] {"user.read"};
+            string[] scopesRequest = new string[] { "user.read" };
             await AuthAndCallAPI(null, scopesRequest);
 
             UpdateScreen();
@@ -74,10 +71,10 @@ namespace NoCAE
         /// </summary>
         private async void CallProfileButton_Click(object sender, RoutedEventArgs e)
         {
-            //Set the API Endpoint to Graph 'me' endpoint
+            // Set the API Endpoint to Graph 'me' endpoint
             string graphAPIEndpoint = "https://graph.microsoft.com/v1.0/me";
 
-            //Set the scope for API call to user.read
+            // Set the scope for API call to user.read
             string[] scopes = new string[] { "user.read" };
 
             await AuthAndCallAPI(graphAPIEndpoint, scopes);
@@ -93,15 +90,11 @@ namespace NoCAE
             sbIdTokenClaims.Clear();
 
             var accessToken = await GetAccessToken(scopes);
-            if (null != accessToken)
+            if (accessToken != null && !string.IsNullOrEmpty(APIEndpoint))
             {
-                if (!string.IsNullOrEmpty(APIEndpoint))
-                {
-                    var results = await GetHttpContentWithToken(APIEndpoint, accessToken, scopes);
-                    sbResults.Append(results);
-                }
+                var results = await GetHttpContentWithToken(APIEndpoint, accessToken, scopes);
+                sbResults.Append(results);
             }
-            return;
         }
 
         private async Task<string> GetAccessToken(string[] scopes, string claimsChallenge = null)
@@ -131,7 +124,7 @@ namespace NoCAE
                 try
                 {
                     authResult = await _clientApp.AcquireTokenInteractive(scopes)
-                    .WithClaims(claimsChallenge == null ? claimsChallenge : ex.Claims)
+                    .WithClaims(claimsChallenge ?? ex.Claims)
                     .WithAccount(firstAccount)
                     .ExecuteAsync()
                     .ConfigureAwait(false);
@@ -151,7 +144,7 @@ namespace NoCAE
                 return null;
             }
 
-            if (null != authResult)
+            if (authResult != null)
             {
                 ParseIDTokenClaims(authResult);
                 ParseTokenResponseInfo(authResult);
@@ -175,64 +168,53 @@ namespace NoCAE
             HttpResponseMessage APIresponse;
             try
             {
-                var APIrequest = new HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
-                //Add the token in Authorization header
-                APIrequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                var APIrequest = new HttpRequestMessage(HttpMethod.Get, url);
+                // Add the token in Authorization header
+                APIrequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 APIresponse = await httpClient.SendAsync(APIrequest);
 
                 if (APIresponse.IsSuccessStatusCode)
                 {
                     var content = await APIresponse.Content.ReadAsStringAsync();
-                    var expandedContent = content.Replace(",", "," + Environment.NewLine);
-                    return expandedContent;
+                    return content.Replace(",", "," + Environment.NewLine);
                 }
                 else
                 {
                     if (APIresponse.StatusCode == System.Net.HttpStatusCode.Unauthorized
                         && APIresponse.Headers.WwwAuthenticate.Any())
                     {
-                        AuthenticationHeaderValue bearer = APIresponse.Headers.WwwAuthenticate.First
-                            (v => v.Scheme == "Bearer");
-                        IEnumerable<string> parameters = bearer.Parameter.Split(',').Select(
-                            v => v.Trim()).ToList();
+                        AuthenticationHeaderValue bearer = APIresponse.Headers.WwwAuthenticate.First(v => v.Scheme == "Bearer");
+                        IEnumerable<string> parameters = bearer.Parameter.Split(',').Select(v => v.Trim()).ToList();
                         var error = GetParameter(parameters, "error");
 
-                        if (null != error && "insufficient_claims" == error)
+                        if (error == "insufficient_claims")
                         {
                             var claimChallengeParameter = GetParameter(parameters, "claims");
-                            if (null != claimChallengeParameter)
+                            if (claimChallengeParameter != null)
                             {
-                                var claimChallengebase64Bytes = System.Convert.FromBase64String(
-                                    claimChallengeParameter);
-                                var ClaimChallenge = System.Text.Encoding.UTF8.GetString(
-                                    claimChallengebase64Bytes);
+                                var claimChallengebase64Bytes = Convert.FromBase64String(claimChallengeParameter);
+                                var ClaimChallenge = Encoding.UTF8.GetString(claimChallengebase64Bytes);
 
                                 var newAccessToken = await GetAccessToken(scopes, ClaimChallenge);
-                                if (null != newAccessToken)
+                                if (newAccessToken != null)
                                 {
-                                    var APIrequestAfterCAE = new HttpRequestMessage(
-                                        System.Net.Http.HttpMethod.Get, url);
-                                    APIrequestAfterCAE.Headers.Authorization =
-                                        new System.Net.Http.Headers.AuthenticationHeaderValue(
-                                            "Bearer", newAccessToken);
+                                    var APIrequestAfterCAE = new HttpRequestMessage(HttpMethod.Get, url);
+                                    APIrequestAfterCAE.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newAccessToken);
 
-                                    HttpResponseMessage APIresponseAfterCAE;
-                                    APIresponseAfterCAE = await httpClient.SendAsync(
-                                        APIrequestAfterCAE);
+                                    HttpResponseMessage APIresponseAfterCAE = await httpClient.SendAsync(APIrequestAfterCAE);
 
                                     if (APIresponseAfterCAE.IsSuccessStatusCode)
                                     {
                                         var content = await APIresponseAfterCAE.Content.ReadAsStringAsync();
-                                        var expandedContent = content.Replace(",", "," + Environment.NewLine);
-                                        return expandedContent;
+                                        return content.Replace(",", "," + Environment.NewLine);
                                     }
                                 }
                             }
                         }
-                        return APIresponse.StatusCode.ToString() + " " + "Authorization: " + bearer.ToString();
+                        return APIresponse.StatusCode + " Authorization: " + bearer;
                     }
-                    sbLog.AppendLine(APIresponse.StatusCode + " " + APIresponse.Content.ReadAsStringAsync());
-                    return APIresponse.StatusCode.ToString() + " " + APIresponse.ReasonPhrase;
+                    sbLog.AppendLine(APIresponse.StatusCode + " " + await APIresponse.Content.ReadAsStringAsync());
+                    return APIresponse.StatusCode + " " + APIresponse.ReasonPhrase;
                 }
             }
             catch (Exception ex)
@@ -255,7 +237,7 @@ namespace NoCAE
                     try
                     {
                         await _clientApp.RemoveAsync(accounts.FirstOrDefault());
-                        this.ResultText.Text = accounts.FirstOrDefault().Username + " User has signed-out";
+                        ResultText.Text = accounts.FirstOrDefault().Username + " User has signed-out";
                         TokenResponseText.Text = string.Empty;
                         IDToken.Text = string.Empty;
                     }
@@ -273,10 +255,9 @@ namespace NoCAE
         private void ParseTokenResponseInfo(AuthenticationResult authResult)
         {
             sbResponse.Clear();
-            sbResponse.Clear();
             if (authResult != null)
             {
-                sbLog.AppendLine($"Token Responce at:{DateTime.Now.ToString()}");
+                sbLog.AppendLine($"Token Response at: {DateTime.Now}");
                 sbLog.AppendLine($"Token Type: {authResult.TokenType}");
                 sbLog.AppendLine($"Correlation Id: {authResult.CorrelationId}");
                 sbLog.AppendLine("---------------------------------------------------------");
@@ -297,7 +278,7 @@ namespace NoCAE
                 sbResponse.Append($", HTTP time: {authResult.AuthenticationResultMetadata.DurationInHttpInMs}");
                 sbResponse.Append($", Total time: {authResult.AuthenticationResultMetadata.DurationTotalInMs}");
 
-                sbResponse.AppendLine($"");
+                sbResponse.AppendLine();
                 sbResponse.AppendLine($"Tenant Id: {authResult.TenantId}");
                 sbResponse.AppendLine($"Unique Id: {authResult.UniqueId}");
                 sbResponse.AppendLine($"User name: {authResult.Account.Username}");
