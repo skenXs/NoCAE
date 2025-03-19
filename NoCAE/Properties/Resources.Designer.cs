@@ -29,6 +29,8 @@ namespace NoCAE.Properties {
         
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resources() {
+            // Constructor for the Resources class
+            Console.WriteLine("Resources constructor called.");
         }
         
         /// <summary>
@@ -37,7 +39,11 @@ namespace NoCAE.Properties {
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
+                // Log the retrieval of the ResourceManager instance
+                Console.WriteLine("Accessing ResourceManager instance.");
                 if (resourceMan == null) {
+                    // Log the initialization of the ResourceManager
+                    Console.WriteLine("Initializing ResourceManager.");
                     resourceMan = new global::System.Resources.ResourceManager("NoCAE.Properties.Resources", typeof(Resources).Assembly);
                 }
                 return resourceMan;
@@ -51,9 +57,13 @@ namespace NoCAE.Properties {
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
         internal static global::System.Globalization.CultureInfo Culture {
             get {
+                // Log the retrieval of the current culture
+                Console.WriteLine("Getting current Culture.");
                 return resourceCulture;
             }
             set {
+                // Log the setting of a new culture
+                Console.WriteLine($"Setting new Culture: {value}");
                 resourceCulture = value;
             }
         }
