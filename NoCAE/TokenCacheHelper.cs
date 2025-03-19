@@ -47,14 +47,17 @@ namespace NoCAE
             {
                 try
                 {
+                    Console.WriteLine("Attempting to deserialize token cache from file.");
                     args.TokenCache.DeserializeMsalV3(File.Exists(CacheFilePath)
                             ? ProtectedData.Unprotect(File.ReadAllBytes(CacheFilePath),
                                                      null,
                                                      DataProtectionScope.CurrentUser)
                             : null);
+                    Console.WriteLine("Token cache deserialization successful.");
                 }
                 catch
                 {
+                    Console.WriteLine("Failed to deserialize token cache. Deleting corrupted cache file.");
                     File.Delete(CacheFilePath);
                     args.TokenCache.DeserializeMsalV3(null);
                 }
@@ -68,18 +71,21 @@ namespace NoCAE
             {
                 lock (FileLock)
                 {
-                    // reflect changesgs in the persistent store
+                    Console.WriteLine("Token cache state has changed. Updating persistent store.");
+                    // reflect changes in the persistent store
                     File.WriteAllBytes(CacheFilePath,
                                        ProtectedData.Protect(args.TokenCache.SerializeMsalV3(), 
                                                              null, 
                                                              DataProtectionScope.CurrentUser)
                                       );
+                    Console.WriteLine("Persistent store updated successfully.");
                 }
             }
         }
 
         internal static void EnableSerialization(ITokenCache tokenCache)
         {
+            Console.WriteLine("Enabling token cache serialization.");
             tokenCache.SetBeforeAccess(BeforeAccessNotification);
             tokenCache.SetAfterAccess(AfterAccessNotification);
         }
