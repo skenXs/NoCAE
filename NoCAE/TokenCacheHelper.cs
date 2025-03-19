@@ -1,30 +1,3 @@
-﻿//------------------------------------------------------------------------------
-//
-// Copyright (c) Microsoft Corporation.
-// All rights reserved.
-//
-// This code is licensed under the MIT License.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files(the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions :
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-//------------------------------------------------------------------------------
-
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -41,47 +14,68 @@ namespace NoCAE
 
         private static readonly object FileLock = new object();
 
+        /// <summary>
+        /// Method to handle actions before accessing the token cache.
+        /// </summary>
+        /// <param name="args">Token cache notification arguments.</param>
         public static void BeforeAccessNotification(TokenCacheNotificationArgs args)
         {
+            Console.WriteLine("BeforeAccessNotification: Attempting to access the token cache.");
             lock (FileLock)
             {
                 try
                 {
+                    // Deserialize the token cache if the cache file exists, otherwise initialize with null
                     args.TokenCache.DeserializeMsalV3(File.Exists(CacheFilePath)
-                            ? ProtectedData.Unprotect(File.ReadAllBytes(CacheFilePath),
-                                                     null,
-                                                     DataProtectionScope.CurrentUser)
-                            : null);
+                        ? ProtectedData.Unprotect(File.ReadAllBytes(CacheFilePath), null, DataProtectionScope.CurrentUser)
+                        : null);
+                    Console.WriteLine("BeforeAccessNotification: Token cache deserialized successfully.");
                 }
-                catch
+                catch (Exception ex)
                 {
+                    // Log the exception and delete the corrupted cache file
+                    Console.WriteLine($"BeforeAccessNotification: Exception occurred - {ex.Message}. Deleting cache file.");
                     File.Delete(CacheFilePath);
                     args.TokenCache.DeserializeMsalV3(null);
                 }
             }
         }
 
+        /// <summary>
+        /// Method to handle actions after accessing the token cache.
+        /// </summary>
+        /// <param name="args">Token cache notification arguments.</param>
         public static void AfterAccessNotification(TokenCacheNotificationArgs args)
         {
+            Console.WriteLine("AfterAccessNotification: Checking if token cache state has changed.");
             // if the access operation resulted in a cache update
             if (args.HasStateChanged)
             {
                 lock (FileLock)
                 {
-                    // reflect changesgs in the persistent store
+                    // Reflect changes in the persistent store
+                    Console.WriteLine("AfterAccessNotification: State has changed. Updating the persistent store.");
                     File.WriteAllBytes(CacheFilePath,
-                                       ProtectedData.Protect(args.TokenCache.SerializeMsalV3(), 
-                                                             null, 
-                                                             DataProtectionScope.CurrentUser)
-                                      );
+                        ProtectedData.Protect(args.TokenCache.SerializeMsalV3(), null, DataProtectionScope.CurrentUser));
+                    Console.WriteLine("AfterAccessNotification: Persistent store updated successfully.");
                 }
+            }
+            else
+            {
+                Console.WriteLine("AfterAccessNotification: No changes detected in token cache state.");
             }
         }
 
+        /// <summary>
+        /// Enables serialization for the token cache by setting up before and after access notifications.
+        /// </summary>
+        /// <param name="tokenCache">The token cache to enable serialization for.</param>
         internal static void EnableSerialization(ITokenCache tokenCache)
         {
+            Console.WriteLine("EnableSerialization: Setting up token cache serialization.");
             tokenCache.SetBeforeAccess(BeforeAccessNotification);
             tokenCache.SetAfterAccess(AfterAccessNotification);
+            Console.WriteLine("EnableSerialization: Token cache serialization setup complete.");
         }
     }
 }
